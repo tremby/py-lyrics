@@ -71,23 +71,15 @@ def lyricwikicase(s):
 	s = urllib.urlencode([(0, s)])[2:]
 	return s
 
-# unescape HTML entities
-def htmlentities_decode(s):
-	def htmlentities_decode_single(e):
-		s = e.group(0)
-		if s[:2] == "&#":
-			try:
-				if s[:3] == "&#x":
-					return unichr(int(s[3:-1], 16))
-				else:
-					return unichr(int(s[2:-1]))
-			except ValueError: pass
-		else:
-			try:
-				s = unichr(htmlentitydefs.name2codepoint[s[1:-1]])
-			except KeyError: pass
-		return s
-	return re.sub("&#?\w+;", htmlentities_decode_single, s)
+# determine whether an executable exists
+def executableexists(program):
+	def isexe(fpath):
+		return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+	for path in os.environ["PATH"].split(os.pathsep):
+		exefile = os.path.join(path, program)
+		if isexe(exefile):
+			return True
+	return False
 
 # get commandline arguments
 nomoreoptions = False
@@ -131,12 +123,21 @@ if artist is not None and title is None:
 	sys.exit(127)
 
 # get currently playing song if one wasn't on the commandline
-if title is None:
+# MPD
+if title is None and executableexists("mpc"):
 	output = subprocess.Popen(["mpc"], stdout=subprocess.PIPE).communicate()[0].split("\n")
-	if output[0][0:8] == "volume: ":
-		print >> sys.stderr, "No current song"
-		sys.exit(1)
-	(artist, title) = output[0].split(" - ")
+	if not output[0][0:8] == "volume: ":
+		(artist, title) = output[0].split(" - ")
+
+# Rhythmbox
+if title is None and executableexists("rhythmbox-client"):
+	output = subprocess.Popen(["rhythmbox-client", "--no-start", "--print-playing"], stdout=subprocess.PIPE).communicate()[0]
+	if len(output) > 0 and not output == "Not playing\n":
+		(artist, title) = output.split(" - ")
+
+if title is None:
+	print >> sys.stderr, "No song is currently playing"
+	sys.exit(1)
 
 # construct wiki page name
 pagename = lyricwikicase(artist) + ":" + lyricwikicase(title)
@@ -179,7 +180,7 @@ if mode == "output":
 
 	# instrumental?
 	instrumental = False
-	if not lyrics.find("{{Instrumental}}") == -1:
+	if not lyrics.lower().find("{{instrumental}}") == -1:
 		instrumental = True
 
 	# output that stuff
