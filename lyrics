@@ -1,0 +1,207 @@
+#!/usr/bin/env python
+
+# lyrics
+# http://perigee.tremby.net/utils/lyrics
+#
+# Patches are welcome
+# Python script making use of LyricWiki (lyrics.wikia.com) to pull lyrics from 
+# the web from the commandline
+#
+# Copyright 2009 Bart Nagel (bart@tremby.net)
+#
+# This program is free software: you can redistribute it and/or modify it under 
+# the terms of the GNU General Public License as published by the Free Software 
+# Foundation, either version 3 of the License, or (at your option) any later 
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT 
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with 
+# this program. If not, see <http://www.gnu.org/licenses/>.
+
+import urllib, urllib2
+import sys
+import os
+import re
+import subprocess
+import xml.sax.saxutils as saxutils
+import htmlentitydefs
+
+def usage(stdout = False):
+	stream = sys.stdout if stdout else sys.stderr
+
+	bin = os.path.basename(progname)
+	indent = " " * (len(bin) + len("Usage: "))
+
+	print >> stream, "Usage: " + os.path.basename(progname) + " [--help|-h]"
+	print >> stream, indent + " [--suppresstitle|-s]"
+	print >> stream, indent + " [--output|--viewurl|--view|--editurl|--edit]"
+	print >> stream, indent + " [artist song]"
+	print >> stream, """
+Get data from lyrics.wikia.com for a particular song. If the artist and song are 
+not given as arguments MPD's currently playing song is used.
+
+Modes:
+	--output	Output the lyrics as plain text to stdout (default)
+	--viewurl	Get the URL of the lyrics page
+	--view		Open a browser at that lyrics page
+	--editurl	Get the URL of the edit lyrics page
+	--edit		Open a browser at that edit lyrics page
+
+Options:
+	--supresstitle, -s	Don't output the artist name and song title
+
+To open a browser, sensible-browser is used."""
+
+def lyricwikicase(s):
+	words = s.split()
+	newwords = []
+	for word in words:
+		newwords.append(word[0].capitalize() + word[1:])
+	s = "_".join(newwords)
+	s = s.replace("<", "Less_Than")
+	s = s.replace(">", "Greater_Than")
+	s = s.replace("#", "Number_")
+	s = s.replace("[", "(")
+	s = s.replace("]", ")")
+	s = s.replace("{", "(")
+	s = s.replace("}", ")")
+	s = urllib.urlencode([(0, s)])[2:]
+	return s
+
+# unescape HTML entities
+def htmlentities_decode(s):
+	def htmlentities_decode_single(e):
+		s = e.group(0)
+		if s[:2] == "&#":
+			try:
+				if s[:3] == "&#x":
+					return unichr(int(s[3:-1], 16))
+				else:
+					return unichr(int(s[2:-1]))
+			except ValueError: pass
+		else:
+			try:
+				s = unichr(htmlentitydefs.name2codepoint[s[1:-1]])
+			except KeyError: pass
+		return s
+	return re.sub("&#?\w+;", htmlentities_decode_single, s)
+
+# get commandline arguments
+nomoreoptions = False
+suppresstitle = False
+artist = None
+title = None
+mode = "output"
+progname = sys.argv.pop(0)
+while len(sys.argv):
+	arg = sys.argv.pop(0)
+	if arg == "--":
+		nomoreoptions = True
+		continue
+	if not nomoreoptions and arg[0] == "-":
+		if arg == "--help" or arg == "-h":
+			usage(True)
+			sys.exit(0)
+		elif arg == "--suppresstitle" or arg == "-s":
+			suppresstitle = True
+			continue
+		elif arg == "--output" or arg == "--viewurl" or arg == "--view" or arg == "--editurl" or arg == "--edit":
+			mode = arg[2:]
+			continue
+		else:
+			print >> sys.stderr, "Unknown option \"%s\"" % arg
+	elif artist is None:
+		artist = arg
+		continue
+	elif title is None:
+		title = arg
+		continue
+	else:
+		print >> sys.stderr, "Unexpected argument \"%s\" since we already have artist and title. Make sure they are quoted." % arg
+	usage()
+	sys.exit(127)
+
+# error checking
+if artist is not None and title is None:
+	print >> sys.stderr, "Got artist but not title"
+	usage()
+	sys.exit(127)
+
+# get currently playing song if one wasn't on the commandline
+if title is None:
+	output = subprocess.Popen(["mpc"], stdout=subprocess.PIPE).communicate()[0].split("\n")
+	if output[0][0:8] == "volume: ":
+		print >> sys.stderr, "No current song"
+		sys.exit(1)
+	(artist, title) = output[0].split(" - ")
+
+# construct wiki page name
+pagename = lyricwikicase(artist) + ":" + lyricwikicase(title)
+
+# do our action
+if mode == "output":
+	url = "http://lyrics.wikia.com/index.php?title=" + pagename + "&action=edit"
+
+	# get lyrics from the edit lyrics page (needs less sanitizing than HTML)
+	try:
+		request = urllib2.Request(url)
+		response = urllib2.urlopen(request)
+		html = unicode(response.read(), errors="ignore")
+	except urllib2.URLError as e:
+		print >> sys.stderr, "Got a URLError (%d)" % e.code
+		sys.exit(5)
+	except urllib.HTTPError as e:
+		print >> sys.stderr, "Got an HTTPError"
+		print >> sys.stderr, e
+		sys.exit(6)
+
+	# look for "page doesn't exist yet"
+	if not html.find("<div class=\"mw-newarticletextanon\">") == -1:
+		print >> sys.stderr, "Lyrics not found"
+		sys.exit(4)
+
+	# look for lyrics block
+	lyricstarthook = "&lt;lyrics&gt;"
+	lyricstart = html.find(lyricstarthook)
+	if lyricstart == -1:
+		print >> sys.stderr, "No lyrics tag"
+		sys.exit(2)
+	lyricstart += len(lyricstarthook)
+	lyricend = html.find("&lt;/lyrics&gt;", lyricstart)
+	if lyricend == -1:
+		print >> sys.stderr, "Couldn't find lyrics close tag"
+		sys.exit(3)
+	
+	lyrics = html[lyricstart:lyricend]
+
+	# instrumental?
+	instrumental = False
+	if not lyrics.find("title=\"Category:Instrumental\"") == -1:
+		instrumental = True
+
+	# output that stuff
+	if not suppresstitle:
+	    print artist + " -- " + title
+	    print
+	if instrumental:
+		print "(instrumental)"
+	else:
+		lyrics = saxutils.unescape(lyrics.strip())
+		if not len(lyrics) == 0 and not lyrics.isspace():
+			print lyrics
+	sys.exit(0)
+
+if mode[0:4] == "view":
+	url = "http://lyrics.wikia.com/" + pagename
+else:
+	url = "http://lyrics.wikia.com/index.php?title=" + pagename + "&action=edit"
+
+if mode[4:] == "url":
+	print url
+else:
+	subprocess.Popen(["sensible-browser", url])
+
+sys.exit(0)
