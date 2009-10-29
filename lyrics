@@ -179,7 +179,7 @@ if mode == "output":
 
 	# instrumental?
 	instrumental = False
-	if not lyrics.find("title=\"Category:Instrumental\"") == -1:
+	if not lyrics.find("{{Instrumental}}") == -1:
 		instrumental = True
 
 	# output that stuff
