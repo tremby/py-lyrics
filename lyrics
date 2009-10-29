@@ -41,7 +41,8 @@ def usage(stdout = False):
 	print >> stream, indent + " [artist song]"
 	print >> stream, """
 Get data from lyrics.wikia.com for a particular song. If the artist and song are 
-not given as arguments MPD's currently playing song is used.
+not given as arguments the currently playing song is taken from MPD or Rhythmbox 
+(in that order of preference).
 
 Modes:
 	--output	Output the lyrics as plain text to stdout (default)
