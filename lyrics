@@ -145,20 +145,28 @@ pagename = lyricwikicase(artist) + ":" + lyricwikicase(title)
 
 # do our action
 if mode == "output":
-	url = "http://lyrics.wikia.com/index.php?title=" + pagename + "&action=edit"
-
 	# get lyrics from the edit lyrics page (needs less sanitizing than HTML)
-	try:
-		request = urllib2.Request(url)
-		response = urllib2.urlopen(request)
-		html = unicode(response.read(), errors="ignore")
-	except urllib2.URLError as e:
-		print >> sys.stderr, "Got a URLError (%d)" % e.code
-		sys.exit(5)
-	except urllib.HTTPError as e:
-		print >> sys.stderr, "Got an HTTPError"
-		print >> sys.stderr, e
-		sys.exit(6)
+	html = ""
+	while True:
+		url = "http://lyrics.wikia.com/index.php?title=" + pagename + "&action=edit"
+
+		try:
+			request = urllib2.Request(url)
+			response = urllib2.urlopen(request)
+			html = unicode(response.read(), errors="ignore")
+		except urllib2.HTTPError as e:
+			print >> sys.stderr, "Got an HTTPError (%d)" % e.code
+			print >> sys.stderr, e
+			sys.exit(5)
+		except urllib2.URLError as e:
+			print >> sys.stderr, "Got a URLError (%s)" % e.reason
+			sys.exit(6)
+
+		if html.find("#Redirect") == -1:
+			break
+
+		# follow redirection
+		pagename = lyricwikicase(re.sub(r'(?s).*#Redirect\s+\[\[(.*?)\]\].*', '\\1', html))
 
 	# look for "page doesn't exist yet"
 	if not html.find("<div class=\"mw-newarticletextanon\">") == -1:
