@@ -72,6 +72,23 @@ def lyricwikicase(s):
 	s = urllib.urlencode([(0, s)])[2:]
 	return s
 
+def htmlentities_decode(s):
+	def htmlentities_decode_single(e):
+		s = e.group(0)
+		if s[:2] == "&#":
+			try:
+				if s[:3] == "&#x":
+					return unichr(int(s[3:-1], 16))
+				else:
+					return unichr(int(s[2:-1]))
+			except ValueError: pass
+		else:
+			try:
+				s = unichr(htmlentitydefs.name2codepoint[s[1:-1]])
+			except KeyError: pass
+		return s
+	return re.sub("&#?\w+;", htmlentities_decode_single, s)
+
 # determine whether an executable exists
 def executableexists(program):
 	def isexe(fpath):
@@ -201,7 +218,7 @@ if mode == "output":
 	else:
 		lyrics = saxutils.unescape(lyrics.strip())
 		if not len(lyrics) == 0 and not lyrics.isspace():
-			print lyrics
+			print htmlentities_decode(lyrics)
 	sys.exit(0)
 
 if mode[0:4] == "view":
