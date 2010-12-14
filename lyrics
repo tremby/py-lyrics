@@ -145,13 +145,13 @@ if artist is not None and title is None:
 if title is None and executableexists("mpc"):
 	output = subprocess.Popen(["mpc"], stdout=subprocess.PIPE).communicate()[0].split("\n")
 	if not output[0][0:8] == "volume: ":
-		(artist, title) = output[0].split(" - ")
+		(artist, title) = output[0].split(" - ", 1)
 
 # Rhythmbox
 if title is None and executableexists("rhythmbox-client"):
 	output = subprocess.Popen(["rhythmbox-client", "--no-start", "--print-playing"], stdout=subprocess.PIPE).communicate()[0]
 	if len(output) > 0 and not output == "Not playing\n":
-		(artist, title) = output.split(" - ")
+		(artist, title) = output.split(" - ", 1)
 
 if title is None:
 	print >> sys.stderr, "No song is currently playing"
