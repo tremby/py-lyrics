@@ -7,7 +7,7 @@
 # Python script making use of LyricWiki (lyrics.wikia.com) to pull lyrics from 
 # the web from the commandline
 #
-# Copyright 2009 Bart Nagel (bart@tremby.net)
+# Copyright 2009~2011 Bart Nagel (bart@tremby.net)
 #
 # This program is free software: you can redistribute it and/or modify it under 
 # the terms of the GNU General Public License as published by the Free Software 
