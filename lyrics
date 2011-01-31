@@ -191,13 +191,13 @@ if mode == "output":
 		sys.exit(4)
 
 	# look for lyrics block
-	lyricstarthook = "&lt;lyrics&gt;"
+	lyricstarthook = "&lt;lyrics"
 	lyricstart = html.find(lyricstarthook)
 	if lyricstart == -1:
 		print >> sys.stderr, "No lyrics tag"
 		sys.exit(2)
-	lyricstart += len(lyricstarthook)
-	lyricend = html.find("&lt;/lyrics&gt;", lyricstart)
+	lyricstart += 1 + len(lyricstarthook)
+	lyricend = html.find("&lt;/lyrics", lyricstart)
 	if lyricend == -1:
 		print >> sys.stderr, "Couldn't find lyrics close tag"
 		sys.exit(3)
