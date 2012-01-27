@@ -61,6 +61,19 @@ optionparser.add_option_group(group)
 group = optparse.OptionGroup(optionparser, "Options")
 group.add_option("--suppresstitle", "-s", action="store_true",
 		help="Don't output the artist name and song title")
+def set_encoding(option, opt_str, value, parser):
+	try:
+		"test".encode(value)
+	except LookupError as e:
+		raise optparse.OptionValueError(str(e))
+	parser.values.encoding = value
+group.add_option("--encoding", action="callback", callback=set_encoding, 
+		type="string", default=None,
+		help="Force the output encoding. The default is to detect the tty "
+				"encoding if stdout is a tty, otherwise to use UTF-8. Allowed "
+				"values are the standard Python encodings and their aliases, "
+				"listed at http://www.python.org/doc/current/library/"
+				"codecs.html#standard-encodings")
 optionparser.add_option_group(group)
 
 # parse the commandline
@@ -164,18 +177,20 @@ if options.mode == "output":
 			output.append(lyrics)
 	output = "\n".join(output)
 
-	# TODO: allow encoding to be chosen as an option
+	# decide encoding if it wasn't specified
+	if options.encoding is None:
+		if sys.stdout.isatty():
+			options.encoding = sys.stdout.encoding
+		else:
+			options.encoding = "utf-8"
 
-	# detect output type, encode as necessary
-	if sys.stdout.isatty():
-		try:
-			print output
-		except UnicodeEncodeError:
-			print >>sys.stderr, "warning: could not encode to tty's encoding " \
-					"'%s'; some characters are replaced" % sys.stdout.encoding
-			print output.encode(sys.stdout.encoding, "replace")
-	else:
-		print output.encode("utf-8")
+	# print the output, with a warning if it couldn't be encoded fully
+	try:
+		print output.encode(options.encoding)
+	except UnicodeEncodeError:
+		print >>sys.stderr, "warning: could not encode to encoding '%s'; " \
+				"some characters are replaced" % options.encoding
+		print output.encode(options.encoding, "replace")
 
 	sys.exit(0)
 
