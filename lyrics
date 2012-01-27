@@ -21,13 +21,12 @@
 # You should have received a copy of the GNU General Public License along with 
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-import urllib, urllib2
+import urllib
 import sys
 import os
 import re
 import subprocess
-import xml.sax.saxutils as saxutils
-import htmlentitydefs
+import lxml.html
 
 def usage(stdout = False):
 	if stdout:
@@ -74,23 +73,6 @@ def lyricwikicase(s):
 	s = s.replace("}", ")")
 	s = urllib.urlencode([(0, s)])[2:]
 	return s
-
-def htmlentities_decode(s):
-	def htmlentities_decode_single(e):
-		s = e.group(0)
-		if s[:2] == "&#":
-			try:
-				if s[:3] == "&#x":
-					return unichr(int(s[3:-1], 16))
-				else:
-					return unichr(int(s[2:-1]))
-			except ValueError: pass
-		else:
-			try:
-				s = unichr(htmlentitydefs.name2codepoint[s[1:-1]])
-			except KeyError: pass
-		return s
-	return re.sub("&#?\w+;", htmlentities_decode_single, s)
 
 # determine whether an executable exists
 def executableexists(program):
@@ -165,63 +147,58 @@ pagename = lyricwikicase(artist) + ":" + lyricwikicase(title)
 
 # do our action
 if mode == "output":
-	# get lyrics from the edit lyrics page (needs less sanitizing than HTML)
-	html = ""
-	while True:
-		url = "http://lyrics.wikia.com/index.php?title=" + pagename + "&action=edit"
-
-		try:
-			request = urllib2.Request(url)
-			response = urllib2.urlopen(request)
-			html = unicode(response.read(), errors="ignore")
-		except urllib2.HTTPError as e:
-			print >> sys.stderr, "Got an HTTPError (%d)" % e.code
-			print >> sys.stderr, e
-			sys.exit(5)
-		except urllib2.URLError as e:
-			print >> sys.stderr, "Got a URLError (%s)" % e.reason
-			sys.exit(6)
-
-		if html.find("#Redirect") == -1:
-			break
-
-		# follow redirection
-		pagename = lyricwikicase(re.sub(r'(?s).*#Redirect\s+\[\[(.*?)\]\].*', '\\1', html))
-
-	# look for "page doesn't exist yet"
-	if not html.find("<div class=\"mw-newarticletextanon\">") == -1:
+	try:
+		doc = lxml.html.parse("http://lyrics.wikia.com/index.php?title=%s" % pagename)
+	except IOError:
 		print >> sys.stderr, "Lyrics not found"
 		sys.exit(4)
 
-	# look for lyrics block
-	lyricstarthook = "&lt;lyrics"
-	lyricstart = html.find(lyricstarthook)
-	if lyricstart == -1:
+	try:
+		lyricbox = doc.getroot().cssselect(".lyricbox")[0]
+	except IndexError:
 		print >> sys.stderr, "No lyrics tag"
 		sys.exit(2)
-	lyricstart += 1 + len(lyricstarthook)
-	lyricend = html.find("&lt;/lyrics", lyricstart)
-	if lyricend == -1:
-		print >> sys.stderr, "Couldn't find lyrics close tag"
-		sys.exit(3)
-	
-	lyrics = html[lyricstart:lyricend]
+
+	lyrics = []
+	if lyricbox.text is not None:
+		lyrics.append(lyricbox.text)
+	for node in lyricbox:
+		if str(node.tag).lower() == "br":
+			lyrics.append("\n")
+		if node.tail is not None:
+			lyrics.append(node.tail)
+	lyrics = "".join(lyrics).strip()
 
 	# instrumental?
 	instrumental = False
 	if not lyrics.lower().find("{{instrumental}}") == -1:
 		instrumental = True
 
-	# output that stuff
+	# prepare output
+	output = []
 	if not suppresstitle:
-	    print artist + " -- " + title
-	    print
+		output.append("%s -- %s" % (artist, title))
+		output.append("")
 	if instrumental:
-		print "(instrumental)"
+		output.append("(instrumental)")
 	else:
-		lyrics = saxutils.unescape(lyrics.strip())
-		if not len(lyrics) == 0 and not lyrics.isspace():
-			print htmlentities_decode(lyrics)
+		if len(lyrics) and not lyrics.isspace():
+			output.append(lyrics)
+	output = "\n".join(output)
+
+	# TODO: allow encoding to be chosen as an option
+
+	# detect output type, encode as necessary
+	if sys.stdout.isatty():
+		try:
+			print output
+		except UnicodeEncodeError:
+			print >>sys.stderr, "warning: could not encode to tty's encoding " \
+					"'%s'; some characters are replaced" % sys.stdout.encoding
+			print output.encode(sys.stdout.encoding, "replace")
+	else:
+		print output.encode("utf-8")
+
 	sys.exit(0)
 
 if mode[0:4] == "view":
