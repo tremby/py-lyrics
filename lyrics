@@ -30,7 +30,10 @@ import xml.sax.saxutils as saxutils
 import htmlentitydefs
 
 def usage(stdout = False):
-	stream = sys.stdout if stdout else sys.stderr
+	if stdout:
+		stream = sys.stdout
+	else:
+		stream = sys.stderr
 
 	bin = os.path.basename(progname)
 	indent = " " * (len(bin) + len("Usage: "))
