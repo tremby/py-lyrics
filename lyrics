@@ -93,11 +93,9 @@ def lyricwikicase(s):
 
 # determine whether an executable exists
 def executableexists(program):
-	def isexe(fpath):
-		return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 	for path in os.environ["PATH"].split(os.pathsep):
 		exefile = os.path.join(path, program)
-		if isexe(exefile):
+		if os.path.exists(exefile) and os.access(exefile, os.X_OK):
 			return True
 	return False
 
