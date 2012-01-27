@@ -102,15 +102,19 @@ def executableexists(program):
 # get currently playing song if one wasn't on the commandline
 # MPD
 if title is None and executableexists("mpc"):
-	output = subprocess.Popen(["mpc"], stdout=subprocess.PIPE).communicate()[0].split("\n")
-	if not output[0][0:8] == "volume: ":
-		(artist, title) = output[0].split(" - ", 1)
+	output = subprocess.Popen(["mpc", "--format", "%artist%\\n%title%"],
+			stdout=subprocess.PIPE).communicate()[0].split("\n")
+	if not output[0].startswith("volume: "):
+		(artist, title) = output[0:2]
 
 # Rhythmbox
 if title is None and executableexists("rhythmbox-client"):
-	output = subprocess.Popen(["rhythmbox-client", "--no-start", "--print-playing"], stdout=subprocess.PIPE).communicate()[0]
-	if len(output) > 0 and not output == "Not playing\n":
-		(artist, title) = output.split(" - ", 1)
+	output = subprocess.Popen(
+			["rhythmbox-client", "--no-start", "--print-playing", 
+					"--print-playing-format=%ta\n%tt"],
+			stdout=subprocess.PIPE).communicate()[0]
+	if len(output) > 0 and output != "Not playing\n":
+		(artist, title) = output.split("\n")[0:2]
 
 if title is None:
 	print >> sys.stderr, "No song is currently playing"
