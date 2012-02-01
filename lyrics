@@ -81,7 +81,7 @@ else:
 			"title) or zero")
 
 # get currently playing song if one wasn't on the commandline
-if title is None and executableexists("mpc"):
+if title is None:
 	try:
 		(artist, title) = getcurrentlyplaying()
 	except TypeError:
