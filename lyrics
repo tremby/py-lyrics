@@ -83,14 +83,15 @@ else:
 # get currently playing song if one wasn't on the commandline
 if title is None:
 	try:
-		(artist, title) = getcurrentlyplaying()
+		(artist, title) = currentlyplaying()
+	except OSError:
+		print >>sys.stderr, "Couldn't get currently playing song -- ensure " \
+				"you have mpc or rhythmbox-client"
+		sys.exit(8)
 	except TypeError:
 		# None was returned since no song is playing
-		pass
-
-if title is None:
-	print >> sys.stderr, "No song is currently playing"
-	sys.exit(1)
+		print >> sys.stderr, "No song is currently playing"
+		sys.exit(1)
 
 # do our action
 if options.mode == "output":

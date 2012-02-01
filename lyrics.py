@@ -79,19 +79,25 @@ def __executableexists(program):
 
 def currentlyplaying():
 	"""Return a tuple (artist, title) if there is a currently playing song in 
-	MPD or Rhythmbox, otherwise None"""
+	MPD or Rhythmbox, otherwise None.
+	Raise an OSError if no means to get the currently playing song exist."""
 
 	artist = None
 	title = None
 
-	# MPD
-	output = subprocess.Popen(["mpc", "--format", "%artist%\\n%title%"],
-			stdout=subprocess.PIPE).communicate()[0].split("\n")
-	if not output[0].startswith("volume: "):
-		(artist, title) = output[0:2]
+	mpc = __executableexists("mpc")
+	rhythmbox = __executableexists("rhythmbox-client")
 
-	# Rhythmbox
-	if title is None and __executableexists("rhythmbox-client"):
+	if not mpc and not rhythmbox:
+		raise OSError("neither mpc nor rhythmbox-client are available")
+
+	if mpc:
+		output = subprocess.Popen(["mpc", "--format", "%artist%\\n%title%"],
+				stdout=subprocess.PIPE).communicate()[0].split("\n")
+		if not output[0].startswith("volume: "):
+			(artist, title) = output[0:2]
+
+	if artist is None and rhythmbox:
 		output = subprocess.Popen(
 				["rhythmbox-client", "--no-start", "--print-playing", 
 						"--print-playing-format=%ta\n%tt"],
