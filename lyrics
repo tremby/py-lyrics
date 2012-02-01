@@ -1,39 +1,31 @@
 #!/usr/bin/env python
 
-# lyrics
-# http://github.com/tremby/py-lyrics
-#
-# Patches are welcome
-# Python script making use of LyricWiki (lyrics.wikia.com) to pull lyrics from 
-# the web from the commandline
-#
-# Copyright 2009~2012 Bart Nagel (bart@tremby.net)
-#
-# This program is free software: you can redistribute it and/or modify it under 
-# the terms of the GNU General Public License as published by the Free Software 
-# Foundation, either version 3 of the License, or (at your option) any later 
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT 
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
-# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with 
-# this program. If not, see <http://www.gnu.org/licenses/>.
+"""
+Copyright 2009~2012 Bart Nagel (bart@tremby.net)
 
-import urllib
-import sys
-import os
-import re
-import subprocess
-import lxml.html
+This program is free software: you can redistribute it and/or modify it under 
+the terms of the GNU General Public License as published by the Free Software 
+Foundation, either version 3 of the License, or (at your option) any later 
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY 
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with 
+this program. If not, see <http://www.gnu.org/licenses/>.
+"""
+
+from lyrics import *
 import optparse
 
-optionparser = optparse.OptionParser(usage="%prog [options] [<artist> <title>]",
+optionparser = optparse.OptionParser(
+		usage="%prog [options] [<artist> <title>]",
+		version="%prog " + VERSION,
 		description="Get data from lyrics.wikia.com for a particular song. If "
 				"the artist and song are not given as arguments the currently "
-				"playing song is taken from MPD or Rhythmbox (in that order "
-				"of preference).",
+				"playing song is taken from MPD or Rhythmbox (in that order of "
+				"preference).",
 		epilog="To open a browser, sensible-browser is used.")
 
 group = optparse.OptionGroup(optionparser, "Modes")
@@ -88,94 +80,38 @@ else:
 	optionparser.error("Expected either two non-option arguments (artist and "
 			"title) or zero")
 
-def lyricwikicase(s):
-	words = s.split()
-	newwords = []
-	for word in words:
-		newwords.append(word[0].capitalize() + word[1:])
-	s = "_".join(newwords)
-	s = s.replace("<", "Less_Than")
-	s = s.replace(">", "Greater_Than")
-	s = s.replace("#", "Number_")
-	s = s.replace("[", "(")
-	s = s.replace("]", ")")
-	s = s.replace("{", "(")
-	s = s.replace("}", ")")
-	s = urllib.urlencode([(0, s)])[2:]
-	return s
-
-# determine whether an executable exists
-def executableexists(program):
-	for path in os.environ["PATH"].split(os.pathsep):
-		exefile = os.path.join(path, program)
-		if os.path.exists(exefile) and os.access(exefile, os.X_OK):
-			return True
-	return False
-
 # get currently playing song if one wasn't on the commandline
-# MPD
 if title is None and executableexists("mpc"):
-	output = subprocess.Popen(["mpc", "--format", "%artist%\\n%title%"],
-			stdout=subprocess.PIPE).communicate()[0].split("\n")
-	if not output[0].startswith("volume: "):
-		(artist, title) = output[0:2]
-
-# Rhythmbox
-if title is None and executableexists("rhythmbox-client"):
-	output = subprocess.Popen(
-			["rhythmbox-client", "--no-start", "--print-playing", 
-					"--print-playing-format=%ta\n%tt"],
-			stdout=subprocess.PIPE).communicate()[0]
-	if len(output) > 0 and output != "Not playing\n":
-		(artist, title) = output.split("\n")[0:2]
+	try:
+		(artist, title) = getcurrentlyplaying()
+	except TypeError:
+		# None was returned since no song is playing
+		pass
 
 if title is None:
 	print >> sys.stderr, "No song is currently playing"
 	sys.exit(1)
 
-# construct wiki page name
-pagename = lyricwikicase(artist) + ":" + lyricwikicase(title)
-
 # do our action
 if options.mode == "output":
 	try:
-		doc = lxml.html.parse("http://lyrics.wikia.com/index.php?title=%s" % pagename)
+		lyrics = getlyrics(artist, title)
 	except IOError:
 		print >> sys.stderr, "Lyrics not found"
 		sys.exit(4)
-
-	try:
-		lyricbox = doc.getroot().cssselect(".lyricbox")[0]
 	except IndexError:
 		print >> sys.stderr, "No lyrics tag"
 		sys.exit(2)
 
-	# look for a sign that it's instrumental
-	if len(doc.getroot().cssselect(".lyricbox a[title=\"Instrumental\"]")):
-		instrumental = True
-	else:
-		instrumental = False
+	instrumental = lyrics is None
 
-	# prepare output
-	output = []
+	output = ""
 	if not options.suppresstitle:
-		output.append("%s -- %s" % (artist, title))
-		output.append("")
-	if instrumental:
-		output.append("(instrumental)")
+		output += "%s -- %s\n\n" % (artist, title)
+	if lyrics is None:
+		output += "(instrumental)"
 	else:
-		lyrics = []
-		if lyricbox.text is not None:
-			lyrics.append(lyricbox.text)
-		for node in lyricbox:
-			if str(node.tag).lower() == "br":
-				lyrics.append("\n")
-			if node.tail is not None:
-				lyrics.append(node.tail)
-		lyrics = "".join(lyrics).strip()
-		if len(lyrics) and not lyrics.isspace():
-			output.append(lyrics)
-	output = "\n".join(output)
+		output += lyrics
 
 	# decide encoding if it wasn't specified
 	if options.encoding is None:
@@ -195,13 +131,11 @@ if options.mode == "output":
 	sys.exit(0)
 
 if options.mode[0:4] == "view":
-	url = "http://lyrics.wikia.com/%s" % pagename
+	url = lyricwikiurl(artist, title)
 else:
-	url = "http://lyrics.wikia.com/index.php?title=%s&action=edit" % pagename
+	url = lyricwikiurl(artist, title, edit=True)
 
 if options.mode[4:] == "url":
 	print url
 else:
 	subprocess.Popen(["sensible-browser", url])
-
-sys.exit(0)
