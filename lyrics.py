@@ -58,14 +58,27 @@ def lyricwikipagename(artist, title):
 
 	return "%s:%s" % (lyricwikicase(artist), lyricwikicase(title))
 
-def lyricwikiurl(artist, title, edit=False):
+def lyricwikiurl(artist, title, edit=False, fuzzy=False):
 	"""Return the URL of a LyricWiki page for the given song, or its edit 
 	page"""
 
-	base = "http://lyrics.wikia.com/"
-	pagename = lyricwikipagename(artist, title)
+	if fuzzy:
+		base = "http://lyrics.wikia.com/index.php?search="
+		pagename = artist + ':' + title
+		if not edit:
+			url = base + pagename
+			doc = lxml.html.parse(url)
+			return doc.docinfo.URL
+	else:
+		base = "http://lyrics.wikia.com/"
+		pagename = lyricwikipagename(artist, title)
 	if edit:
-		return base + "index.php?title=%s&action=edit" % pagename
+		if fuzzy:
+			url = base + pagename
+			doc = lxml.html.parse(url)
+			return doc.docinfo.URL + "&action=edit"
+		else:
+			return base + "index.php?title=%s&action=edit" % pagename
 	return base + pagename
 
 def __executableexists(program):
@@ -109,14 +122,14 @@ def currentlyplaying():
 		return None
 	return (artist, title)
 
-def getlyrics(artist, title):
+def getlyrics(artist, title, fuzzy=False):
 	"""Get and return the lyrics for the given song.
 	Raises an IOError if the lyrics couldn't be found.
 	Raises an IndexError if there is no lyrics tag.
 	Returns None if there are no lyrics (it's instrumental)."""
 
 	try:
-		doc = lxml.html.parse(lyricwikiurl(artist, title))
+		doc = lxml.html.parse(lyricwikiurl(artist, title, fuzzy=fuzzy))
 	except IOError:
 		raise
 
