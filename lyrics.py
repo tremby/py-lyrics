@@ -126,7 +126,7 @@ def getlyrics(artist, title, fuzzy=False):
 	"""Get and return the lyrics for the given song.
 	Raises an IOError if the lyrics couldn't be found.
 	Raises an IndexError if there is no lyrics tag.
-	Returns None if there are no lyrics (it's instrumental)."""
+	Returns False if there are no lyrics (it's instrumental)."""
 
 	try:
 		doc = lxml.html.parse(lyricwikiurl(artist, title, fuzzy=fuzzy))
