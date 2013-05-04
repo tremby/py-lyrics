@@ -135,10 +135,7 @@ if options.mode == "output":
 
 	sys.exit(0)
 
-if options.mode[0:4] == "view":
-	url = lyricwikiurl(artist, title, fuzzy=fuzzy)
-else:
-	url = lyricwikiurl(artist, title, edit=True, fuzzy=fuzzy)
+url = lyricwikiurl(artist, title, edit=options.mode[0:4] != "view", fuzzy=options.fuzzy)
 
 if options.mode[4:] == "url":
 	print url
