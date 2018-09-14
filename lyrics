@@ -116,7 +116,7 @@ if options.mode == "output":
 	if lyrics is None:
 		output += "(instrumental)"
 	else:
-		output += lyrics
+		output += str(lyrics)
 
 	# decide encoding if it wasn't specified
 	if options.encoding is None:
