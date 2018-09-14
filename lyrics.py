@@ -49,7 +49,7 @@ def lyricwikicase(s):
 	s = s.replace("]", ")")
 	s = s.replace("{", "(")
 	s = s.replace("}", ")")
-	s = urllib.urlencode([(0, s)])[2:]
+	s = urllib.parse.urlencode([(0, s)])[2:]
 	return s
 
 def lyricwikipagename(artist, title):

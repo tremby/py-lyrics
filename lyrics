@@ -89,12 +89,12 @@ if title is None:
 	try:
 		(artist, title) = currentlyplaying()
 	except OSError:
-		print >>sys.stderr, "Couldn't get currently playing song -- ensure " \
-				"you have mpc or rhythmbox-client"
+		print("Couldn't get currently playing song.", file=sys.stderr)
+		print(" -- Ensure that you have mpc or rhythmbox-client setup.", file=sys.stderr)
 		sys.exit(8)
 	except TypeError:
 		# None was returned since no song is playing
-		print >> sys.stderr, "No song is currently playing"
+		print("No song is currently playing", file=sys.stderr)
 		sys.exit(1)
 
 # do our action
@@ -102,10 +102,10 @@ if options.mode == "output":
 	try:
 		lyrics = getlyrics(artist, title, fuzzy=options.fuzzy)
 	except IOError:
-		print >> sys.stderr, "Lyrics not found"
+		print("Lyrics not found", file=sys.stderr)
 		sys.exit(4)
 	except IndexError:
-		print >> sys.stderr, "No lyrics tag"
+		print("No lyrics tag", file=sys.stderr)
 		sys.exit(2)
 
 	instrumental = lyrics is None
@@ -127,17 +127,17 @@ if options.mode == "output":
 
 	# print the output, with a warning if it couldn't be encoded fully
 	try:
-		print output.encode(options.encoding)
+		print(output.encode(options.encoding).decode('utf-8'))
 	except UnicodeEncodeError:
-		print >>sys.stderr, "warning: could not encode to encoding '%s'; " \
-				"some characters are replaced" % options.encoding
-		print output.encode(options.encoding, "replace")
+		print("Warning: some characters have been replaced.", file=sys.stderr)
+		print("Could not encode to encoding:", file=sys.stderr)
+		print(output.encode(options.encoding, "replace").decode('utf-8'))
 
 	sys.exit(0)
 
 url = lyricwikiurl(artist, title, edit=options.mode[0:4] != "view", fuzzy=options.fuzzy)
 
 if options.mode[4:] == "url":
-	print url
+	print(url)
 else:
 	subprocess.Popen(["sensible-browser", url])
