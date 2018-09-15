@@ -1,5 +1,5 @@
 """
-Copyright 2009~2012 Bart Nagel (bart@tremby.net)
+Copyright 2009~2018 Bart Nagel (bart@tremby.net)
 
 This program is free software: you can redistribute it and/or modify it under 
 the terms of the GNU General Public License as published by the Free Software 
