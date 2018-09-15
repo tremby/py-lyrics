@@ -8,6 +8,7 @@ Dependencies
 ------------
 
 - lxml
+- cssselect
 
 Optional:
 

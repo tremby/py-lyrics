@@ -1,5 +1,5 @@
 """
-Copyright 2009~2012 Bart Nagel (bart@tremby.net)
+Copyright 2009~2018 Bart Nagel (bart@tremby.net)
 
 This program is free software: you can redistribute it and/or modify it under 
 the terms of the GNU General Public License as published by the Free Software 
@@ -49,7 +49,12 @@ def lyricwikicase(s):
 	s = s.replace("]", ")")
 	s = s.replace("{", "(")
 	s = s.replace("}", ")")
-	s = urllib.urlencode([(0, s)])[2:]
+	try:
+		# Python 3 version
+		s = urllib.parse.urlencode([(0, s)])[2:]
+	except AttributeError:
+		# Python 2 version
+		s = urllib.urlencode([(0, s)])[2:]
 	return s
 
 def lyricwikipagename(artist, title):
@@ -106,17 +111,17 @@ def currentlyplaying():
 
 	if mpc:
 		output = subprocess.Popen(["mpc", "--format", "%artist%\\n%title%"],
-				stdout=subprocess.PIPE).communicate()[0].split("\n")
-		if not output[0].startswith("volume: "):
-			(artist, title) = output[0:2]
+				stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+		if not output.startswith("volume: "):
+			(artist, title) = output.splitlines()[0:2]
 
 	if artist is None and rhythmbox:
 		output = subprocess.Popen(
 				["rhythmbox-client", "--no-start", "--print-playing", 
 						"--print-playing-format=%ta\n%tt"],
-				stdout=subprocess.PIPE).communicate()[0]
+				stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
 		if len(output) > 0 and output != "Not playing\n":
-			(artist, title) = output.split("\n")[0:2]
+			(artist, title) = output.splitlines()[0:2]
 
 	if artist is None or title is None:
 		return None
