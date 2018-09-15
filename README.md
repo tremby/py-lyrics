@@ -47,10 +47,11 @@ Bugs
 
 Probably. Reports or patches are welcome, on the Github tracker.
 
-Author
-------
+Authors
+-------
 
 Bart Nagel <bart@tremby.net>
+and [others](https://github.com/tremby/py-lyrics/graphs/contributors)
 
 Download
 --------
