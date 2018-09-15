@@ -89,8 +89,8 @@ if title is None:
 	try:
 		(artist, title) = currentlyplaying()
 	except OSError:
-		print("Couldn't get currently playing song.", file=sys.stderr)
-		print(" -- Ensure that you have mpc or rhythmbox-client setup.", file=sys.stderr)
+		print("Couldn't get currently playing song -- ensure "
+				"you have mpc or rhythmbox-client", file=sys.stderr)
 		sys.exit(8)
 	except TypeError:
 		# None was returned since no song is playing
@@ -129,8 +129,8 @@ if options.mode == "output":
 	try:
 		print(output.encode(options.encoding).decode('utf-8'))
 	except UnicodeEncodeError:
-		print("Warning: some characters have been replaced.", file=sys.stderr)
-		print("Could not encode to encoding:", file=sys.stderr)
+		print("warning: could not encode to encoding '{}'; "
+				"some characters are replaced".format(options.encoding), file=sys.stderr)
 		print(output.encode(options.encoding, "replace").decode('utf-8'))
 
 	sys.exit(0)
