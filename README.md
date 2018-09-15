@@ -12,7 +12,7 @@ Python packages:
 - lxml
 - cssselect
 
-Binaries:
+Optional binaries:
 
 - mpc to get the currently playing song from MPD
 
