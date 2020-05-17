@@ -108,7 +108,7 @@ def getlyrics(artist, title):
 	"""Get and return the lyrics for the given song.
 	Raises an IOError if the lyrics couldn't be found.
 	Raises an IndexError if there is no lyrics tag.
-	Returns False if there are no lyrics (it's instrumental)."""
+	Returns None if there are no lyrics (it's instrumental)."""
 
 	try:
 		url = lyricwikiurl(artist, title)
@@ -124,7 +124,7 @@ def getlyrics(artist, title):
 
 	# look for a sign that it's instrumental
 	if len(doc.getroot().cssselect(".lyricbox a[title=\"Instrumental\"]")):
-		return False
+		return None
 
 	# prepare output
 	lyrics = []
