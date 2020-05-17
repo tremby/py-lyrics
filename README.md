@@ -56,4 +56,4 @@ and [others](https://github.com/tremby/py-lyrics/graphs/contributors)
 Download
 --------
 
-- [From Github](http://github.com/tremby/py-lyrics)
+- [From Github](https://github.com/tremby/py-lyrics)

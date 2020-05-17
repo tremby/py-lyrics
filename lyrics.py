@@ -11,7 +11,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with 
-this program. If not, see <http://www.gnu.org/licenses/>.
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 NAME = "lyrics"
@@ -20,7 +20,7 @@ DESCRIPTION = """Python script making use of LyricWiki (lyrics.wikia.com) to pul
 lyrics from the web from the commandline"""
 AUTHOR = "Bart Nagel"
 AUTHOR_EMAIL = "bart@tremby.net"
-URL = "http://github.com/tremby/py-lyrics"
+URL = "https://github.com/tremby/py-lyrics"
 LICENSE = "Gnu GPL v3"
 
 import urllib
@@ -33,7 +33,7 @@ import lxml.html
 def lyricwikicase(s):
 	"""Return a string in LyricWiki case.
 	Substitutions are performed as described at 
-	<http://lyrics.wikia.com/LyricWiki:Page_Names>.
+	<https://lyrics.wikia.com/LyricWiki:Page_Names>.
 	Essentially that means capitalizing every word and substituting certain 
 	characters."""
 

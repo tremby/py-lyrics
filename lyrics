@@ -13,7 +13,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with 
-this program. If not, see <http://www.gnu.org/licenses/>.
+this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
@@ -65,7 +65,7 @@ group.add_option("--encoding", action="callback", callback=set_encoding,
 		help="Force the output encoding. The default is to detect the tty "
 				"encoding if stdout is a tty, otherwise to use UTF-8. Allowed "
 				"values are the standard Python encodings and their aliases, "
-				"listed at http://www.python.org/doc/current/library/"
+				"listed at https://docs.python.org/3/library/"
 				"codecs.html#standard-encodings")
 optionparser.add_option_group(group)
 
