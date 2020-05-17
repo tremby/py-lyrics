@@ -52,10 +52,6 @@ group.add_option("--edit", action="store_const", dest="mode",
 optionparser.add_option_group(group)
 
 group = optparse.OptionGroup(optionparser, "Options")
-group.add_option("--fuzzy", "-f", action="store_true",
-		help="Do a fuzzy search rather than expecting the artist name and song "
-				"title to exist on lyrics.wikia.com exactly as given as the "
-				"arguments")
 group.add_option("--suppresstitle", "-s", action="store_true",
 		help="Don't output the artist name and song title")
 def set_encoding(option, opt_str, value, parser):
@@ -101,7 +97,7 @@ if title is None:
 # do our action
 if options.mode == "output":
 	try:
-		lyrics = getlyrics(artist, title, fuzzy=options.fuzzy)
+		lyrics = getlyrics(artist, title)
 	except IOError:
 		print("Lyrics not found", file=sys.stderr)
 		sys.exit(4)
@@ -136,7 +132,7 @@ if options.mode == "output":
 
 	sys.exit(0)
 
-url = lyricwikiurl(artist, title, edit=options.mode[0:4] != "view", fuzzy=options.fuzzy)
+url = lyricwikiurl(artist, title, edit=options.mode[0:4] != "view")
 
 if options.mode[4:] == "url":
 	print(url)
