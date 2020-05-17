@@ -28,7 +28,9 @@ import sys
 import os
 import re
 import subprocess
+import requests
 import lxml.html
+from StringIO import StringIO
 
 def lyricwikicase(s):
 	"""Return a string in LyricWiki case.
@@ -109,7 +111,9 @@ def getlyrics(artist, title):
 	Returns False if there are no lyrics (it's instrumental)."""
 
 	try:
-		doc = lxml.html.parse(lyricwikiurl(artist, title))
+		url = lyricwikiurl(artist, title)
+		res = requests.get(url)
+		doc = lxml.html.parse(StringIO(res.content), base_url=url)
 	except IOError:
 		raise
 
